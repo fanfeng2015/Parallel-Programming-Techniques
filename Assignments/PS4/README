@@ -1,0 +1,76 @@
+This directory contains a sample matrix multiplication code in matmul.cu.
+
+Three GPU-equipped nodes have been reserved for class use. These are: 
+
+c22n05 and c22n06
+
+Each node contains 4 GPUs (actually, 2 K80 GPUs, which are comprised of 2 GPUs each).
+In addition, each node contains 20 cores and 128 GB of CPU memory. 
+
+You will be able to run jobs on 1 GPU at a time, and we will only permit 1 job per student
+to be queued or running at any one time. To access a GPU you must submit a job to the
+cpsc424_gpu partition using the following Slurm srun command (for an interactive session, which 
+may well be what you will want to use throughout this assignment). The srun command below
+illustrates the maximum settings; you may reduce some or all if you wish.
+
+      srun --pty -c 5 --mem-per-cpu=6100 -p cpsc424_gpu --gres-flags=enforce-binding -t 2:00:00 --gres=gpu:1 bash
+
+You may add --x11 to this if you wish. Note that the time limit is 2 hours; please use shorter durations
+as appropriate. (Up to 8 students can run at a time with these settings.)
+
+For a batch job, you can create a script using similar options and submit it using sbatch.
+
+From here on in this document, you must be in a session on one of the GPU
+nodes. Most GPU-related commands will not work on nodes that have no GPUs.
+
+=============================================================================
+
+Once you've logged into a GPU node and allocated a GPU, you're ready to go. 
+
+Start by loading two module files:
+
+      module load Langs/Intel/15 GPU/Cuda/8.0
+
+This will set your PATH and LD_LIBRARY_PATH environment variables to find 
+Cuda tools and libraries.
+
+After loading the module files, try running "nvidia-smi" to learn more about
+the GPU assigned to you. NOTE: Neither this command, nor the Makefile I've
+provided will work on non-GPU nodes. Note that your GPU will say that it is a K80,
+but it is really only half of a K80 (more-or-less equivalent to a K40).
+
+To build the sample matrix multiplication code, run
+
+      make matmul
+
+This make command uses the makefile Makefile, which invokes the nvcc compiler 
+to build the code. 
+
+Once the code is built, you can execute it using:
+
+      ./matmul <n> <B> <G>
+
+where 
+
+      <n> is the number of rows and columns in the (square) matrices
+
+      <B> is the number of thread rows and columns in a thread block. 
+
+      <G> is the number of block rows and columns in the grid.
+
+So this means that  
+
+      blockDim.x = blockDim.y = <B>
+      blockDim.z = 1
+
+and
+
+      gridDim.x = gridDim.y = <G>
+      gridDim.z = 1
+
+For the sample code, you need to have at least <n> threads in the x and y 
+directions since each thread computes just one entry of the output matrix.
+(You could have excess blocks, if you wish, though there's no good reason for that.) 
+The sample code checks to make sure that it has a sufficient number of threads
+in the x and y directions to carry out the computation. You may need to modify
+that check for later parts of the assignment.
